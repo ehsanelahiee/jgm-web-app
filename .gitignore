@@ -1,0 +1,21 @@
+# Virtual environment — never upload this (it's huge and machine-specific)
+venv/
+.venv/
+
+# SQLite database — never upload this to GitHub
+# Railway uses its own persistent storage for the live database
+instance/
+*.db
+
+# Python cache files — auto-generated, not needed
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment variables file (if you create one later)
+.env
+
+# IDE / OS files
+.vscode/
+.DS_Store
+Thumbs.db
