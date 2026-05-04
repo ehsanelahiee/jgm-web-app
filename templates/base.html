@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}JGM Wholesale{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+</head>
+<body>
+<div id="wrapper">
+
+  <div class="topbar">
+    <div class="logo">
+      <span class="logo-dot"></span>JGM Wholesale
+    </div>
+    <div class="topbar-right">
+      <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
+      <a href="{{ url_for('logout') }}" class="btn btn-sm btn-ghost">Lock</a>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <a href="{{ url_for('home') }}"      class="nav-btn {% if request.endpoint=='home'      %}active{% endif %}">Home</a>
+    <a href="{{ url_for('invoice') }}"   class="nav-btn {% if request.endpoint=='invoice'   %}active{% endif %}">New Invoice</a>
+    <a href="{{ url_for('records') }}"   class="nav-btn {% if request.endpoint=='records'   %}active{% endif %}">Sales History</a>
+    <a href="{{ url_for('customers') }}" class="nav-btn {% if request.endpoint=='customers' %}active{% endif %}">Customers</a>
+    <a href="{{ url_for('ledger') }}"    class="nav-btn {% if request.endpoint in ['ledger','ledger_detail'] %}active{% endif %}">Ledger</a>
+    <a href="{{ url_for('inventory') }}" class="nav-btn {% if request.endpoint=='inventory' %}active{% endif %}">Inventory</a>
+    <a href="{{ url_for('products') }}"  class="nav-btn {% if request.endpoint=='products'  %}active{% endif %}">Products</a>
+    <a href="{{ url_for('settings') }}"  class="nav-btn {% if request.endpoint=='settings'  %}active{% endif %}">Settings</a>
+  </nav>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-wrap">
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">
+            {{ '✓' if category=='success' else '!' }} {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+
+</div>
+
+<script>
+// ── THEME ────────────────────────────────────────────────────
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('theme-btn').textContent = isDark ? '🌙' : '☀️';
+  localStorage.setItem('jgm-theme', isDark ? 'light' : 'dark');
+}
+(function(){
+  const t = localStorage.getItem('jgm-theme') || 'light';
+  document.documentElement.setAttribute('data-theme', t);
+  const b = document.getElementById('theme-btn');
+  if (b) b.textContent = t === 'dark' ? '☀️' : '🌙';
+})();
+
+// ── COLLAPSIBLE SECTIONS ─────────────────────────────────────
+// Usage in HTML:
+//   <div class="section-header" onclick="toggleSection(this)">
+//     <div class="section-title">Title</div>
+//     <div class="collapse-icon open">▼</div>
+//   </div>
+//   <div class="section-body">...content...</div>
+
+function toggleSection(header) {
+  const icon = header.querySelector('.collapse-icon');
+  const body = header.nextElementSibling;
+  if (!body || !body.classList.contains('section-body')) return;
+  const isOpen = !body.classList.contains('collapsed');
+  if (isOpen) {
+    // Animate height to 0
+    body.style.maxHeight = body.scrollHeight + 'px';
+    body.style.overflow = 'hidden';
+    requestAnimationFrame(() => {
+      body.style.transition = 'max-height 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease';
+      body.style.maxHeight = '0';
+      body.style.opacity = '0';
+    });
+    setTimeout(() => { body.classList.add('collapsed'); body.style.maxHeight = ''; body.style.opacity = ''; body.style.overflow = ''; }, 310);
+    icon.classList.remove('open');
+  } else {
+    body.classList.remove('collapsed');
+    body.style.maxHeight = '0'; body.style.overflow = 'hidden'; body.style.opacity = '0';
+    requestAnimationFrame(() => {
+      body.style.transition = 'max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease';
+      body.style.maxHeight = body.scrollHeight + 'px';
+      body.style.opacity = '1';
+    });
+    setTimeout(() => { body.style.maxHeight = ''; body.style.overflow = ''; body.style.opacity = ''; }, 360);
+    icon.classList.add('open');
+  }
+}
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

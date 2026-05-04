@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Settings — JGM Wholesale{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-bg">
+    <svg width="200" height="185" viewBox="0 0 200 185" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.2">
+      <!-- Large gear -->
+      <circle cx="95" cy="90" r="38" fill="none" stroke="#1db954" stroke-width="9"/>
+      <circle cx="95" cy="90" r="16" fill="#1db954"/>
+      <!-- Gear teeth (8 teeth as rounded rectangles) -->
+      <rect x="88" y="42" width="14" height="18" rx="5" fill="#1db954"/>
+      <rect x="88" y="120" width="14" height="18" rx="5" fill="#1db954"/>
+      <rect x="47" y="83" width="18" height="14" rx="5" fill="#1db954"/>
+      <rect x="125" y="83" width="18" height="14" rx="5" fill="#1db954"/>
+      <rect x="58" y="52" width="14" height="18" rx="5" fill="#1db954" transform="rotate(-45 65 61)"/>
+      <rect x="114" y="52" width="14" height="18" rx="5" fill="#1db954" transform="rotate(45 121 61)"/>
+      <rect x="58" y="110" width="14" height="18" rx="5" fill="#1db954" transform="rotate(45 65 119)"/>
+      <rect x="114" y="110" width="14" height="18" rx="5" fill="#1db954" transform="rotate(-45 121 119)"/>
+      <!-- Small gear -->
+      <circle cx="158" cy="48" r="22" fill="none" stroke="#38bdf8" stroke-width="6"/>
+      <circle cx="158" cy="48" r="9"  fill="#38bdf8"/>
+      <rect x="153" y="20" width="10" height="12" rx="4" fill="#38bdf8"/>
+      <rect x="153" y="64" width="10" height="12" rx="4" fill="#38bdf8"/>
+      <rect x="130" y="43" width="12" height="10" rx="4" fill="#38bdf8"/>
+      <rect x="174" y="43" width="12" height="10" rx="4" fill="#38bdf8"/>
+      <!-- Wrench -->
+      <rect x="30" y="130" width="10" height="45" rx="5" fill="#a78bfa" transform="rotate(-30 35 152)"/>
+      <circle cx="22" cy="148" r="10" fill="none" stroke="#a78bfa" stroke-width="6"/>
+    </svg>
+  </div>
+  <div class="page-header-content">
+    <div class="page-title">Settings</div>
+    <div class="page-sub">Company details, invoice configuration, and security</div>
+  </div>
+</div>
+<div class="card">
+  <div class="section-header" onclick="toggleSection(this)">
+    <div class="section-title">Company Details</div>
+    <div class="collapse-icon open">▼</div>
+  </div>
+  <div class="section-body">
+    <p style="font-size:13px;color:var(--text3);margin-bottom:1.25rem">These details are printed on every invoice.</p>
+    <form method="POST">
+      <input type="hidden" name="action" value="save_settings"/>
+      <div class="grid3">
+        <div><label class="label">Company Name</label><input type="text" name="company" value="{{ settings.company }}"/></div>
+        <div><label class="label">Company Reg. No.</label><input type="text" name="crn" value="{{ settings.crn }}" placeholder="12345678"/></div>
+        <div><label class="label">VAT Number</label><input type="text" name="vat_no" value="{{ settings.vat_no }}" placeholder="GB000000000"/></div>
+      </div>
+      <div class="grid2 mt">
+        <div><label class="label">Address</label><input type="text" name="address" value="{{ settings.address }}"/></div>
+        <div><label class="label">Postcode</label><input type="text" name="postcode" value="{{ settings.postcode }}" placeholder="e.g. PA1 1AA"/></div>
+      </div>
+      <div class="grid2 mt">
+        <div><label class="label">Phone</label><input type="text" name="phone" value="{{ settings.phone }}"/></div>
+        <div><label class="label">Email</label><input type="text" name="email" value="{{ settings.email }}"/></div>
+      </div>
+      <div class="grid2 mt">
+        <div><label class="label">Invoice Number Prefix</label><input type="text" name="inv_prefix" value="{{ settings.inv_prefix }}" style="max-width:160px"/></div>
+        <div><label class="label">Low Stock Alert Threshold</label><input type="number" name="low_stock" value="{{ settings.low_stock }}" min="0" step="1" style="max-width:120px"/></div>
+      </div>
+      <div class="mt"><button type="submit" class="btn btn-primary">Save Settings</button></div>
+    </form>
+  </div>
+</div>
+<div class="card">
+  <div class="section-header" onclick="toggleSection(this)">
+    <div class="section-title">Change PIN</div>
+    <div class="collapse-icon">▼</div>
+  </div>
+  <div class="section-body collapsed">
+    <form method="POST">
+      <input type="hidden" name="action" value="change_pin"/>
+      <div class="grid3">
+        <div><label class="label">Current PIN</label><input type="password" name="pin_cur" maxlength="4" placeholder="••••"/></div>
+        <div><label class="label">New PIN</label><input type="password" name="pin_new" maxlength="4" placeholder="••••"/></div>
+        <div><label class="label">Confirm New PIN</label><input type="password" name="pin_conf" maxlength="4" placeholder="••••"/></div>
+      </div>
+      <div class="mt"><button type="submit" class="btn btn-primary">Change PIN</button></div>
+    </form>
+  </div>
+</div>
+{% endblock %}

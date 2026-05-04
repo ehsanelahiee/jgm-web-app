@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Products — JGM Wholesale{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-bg">
+    <svg width="200" height="190" viewBox="0 0 200 190" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.12">
+      <!-- Shelves with products -->
+      <rect x="10" y="60" width="180" height="8" rx="4" fill="currentColor"/>
+      <rect x="10" y="130" width="180" height="8" rx="4" fill="currentColor"/>
+      <!-- Cans row 1 -->
+      <rect x="25"  y="30" width="22" height="30" rx="6" fill="currentColor" opacity="0.8"/>
+      <rect x="55"  y="35" width="22" height="25" rx="6" fill="currentColor" opacity="0.7"/>
+      <rect x="85"  y="28" width="22" height="32" rx="6" fill="currentColor" opacity="0.9"/>
+      <rect x="115" y="33" width="22" height="27" rx="6" fill="currentColor" opacity="0.75"/>
+      <rect x="145" y="30" width="22" height="30" rx="6" fill="currentColor" opacity="0.8"/>
+      <!-- Boxes row 2 -->
+      <rect x="20"  y="95" width="28" height="35" rx="4" fill="currentColor" opacity="0.7"/>
+      <rect x="60"  y="98" width="35" height="32" rx="4" fill="currentColor" opacity="0.8"/>
+      <rect x="105" y="93" width="28" height="37" rx="4" fill="currentColor" opacity="0.65"/>
+      <rect x="143" y="97" width="32" height="33" rx="4" fill="currentColor" opacity="0.75"/>
+    </svg>
+  </div>
+  <div class="page-header-content">
+    <div class="page-title">Products</div>
+    <div class="page-sub">Manage catalogue — add, import, and export</div>
+  </div>
+</div>
+
+<!-- Add Product -->
+<div class="card">
+  <div class="section-header" onclick="toggleSection(this)">
+    <div class="section-title">Add Product</div>
+    <div class="collapse-icon open">▼</div>
+  </div>
+  <div class="section-body">
+    <form method="POST">
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 100px 100px auto;gap:10px;align-items:end">
+        <div><label class="label">Product Name *</label><input type="text" name="name" required placeholder="e.g. Coca-Cola 500ml x24"/></div>
+        <div><label class="label">SKU / Code</label><input type="text" name="sku" placeholder="e.g. CC-500-24"/></div>
+        <div><label class="label">Category</label><input type="text" name="category" placeholder="e.g. Drinks"/></div>
+        <div><label class="label">Price (£)</label><input type="number" name="price" step="0.01" min="0" placeholder="0.00"/></div>
+        <div><label class="label">VAT</label>
+          <select name="vat"><option value="20">20%</option><option value="0">0% exempt</option></select></div>
+        <div><label class="label">Stock</label><input type="number" name="stock" min="0" step="1" placeholder="0" style="width:80px"/></div>
+      </div>
+      <div class="mt"><button type="submit" class="btn btn-primary">Add Product</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Import CSV -->
+<div class="card">
+  <div class="section-header" onclick="toggleSection(this)">
+    <div class="section-title">Import from CSV</div>
+    <div class="collapse-icon">▼</div>
+  </div>
+  <div class="section-body collapsed">
+    <p style="font-size:13px;color:var(--text3);margin-bottom:1rem;font-weight:400">
+      CSV format: <strong>Name, Price, VAT, Stock, SKU, Category</strong> — header row auto-skipped.
+    </p>
+    <form method="POST" action="{{ url_for('import_products_csv') }}" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <input type="file" name="csv_file" accept=".csv" required style="width:auto;font-size:13px"/>
+      <button type="submit" class="btn btn-success btn-sm">Import CSV</button>
+    </form>
+    <div class="mt">
+      <a href="{{ url_for('download_product_template') }}" class="btn btn-sm">Download Template</a>
+    </div>
+  </div>
+</div>
+
+<!-- Product List -->
+<div class="card">
+  <div class="section-header" onclick="toggleSection(this)">
+    <div class="section-title">Product Catalogue ({{ products|length }})</div>
+    <div class="collapse-icon open">▼</div>
+  </div>
+  <div class="section-body">
+    <form method="GET" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:1.25rem">
+      <input type="text" name="q" value="{{ search }}" placeholder="Search name or SKU..." style="flex:1;min-width:160px"/>
+      <select name="cat" style="width:160px">
+        <option value="">All categories</option>
+        {% for c in categories %}<option value="{{ c }}" {{ 'selected' if cat==c }}>{{ c }}</option>{% endfor %}
+      </select>
+      <button type="submit" class="btn btn-primary btn-sm">Search</button>
+      <a href="{{ url_for('products') }}" class="btn btn-sm">Clear</a>
+      <a href="{{ url_for('export_products_csv') }}" class="btn btn-success btn-sm">Export CSV</a>
+    </form>
+    {% if products %}
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Product Name</th><th>SKU / Code</th><th>Category</th><th>Price</th><th>VAT</th><th>Stock</th><th></th></tr></thead>
+      <tbody>
+        {% for p in products %}
+        <tr>
+          <td style="font-weight:600"><a href="{{ url_for('product_detail', pid=p.id) }}" style="color:var(--primary);text-decoration:none">{{ p.name }}</a></td>
+          <td><code style="font-size:12px;background:var(--surface2);padding:2px 6px;border-radius:4px">{{ p.sku or '—' }}</code></td>
+          <td>{% if p.category %}<span class="badge b-vat">{{ p.category }}</span>{% else %}—{% endif %}</td>
+          <td>£{{ "%.2f"|format(p.price) }}</td>
+          <td><span class="badge {{ 'b-vat' if p.vat==20 else 'b-exempt' }}">{{ p.vat }}%</span></td>
+          <td>{{ p.stock }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('delete_product', pid=p.id) }}" onsubmit="return confirm('Remove this product?')">
+              <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <div class="empty"><div class="empty-icon">📦</div>No products found.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

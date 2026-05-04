@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Invoice {{ inv.num }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *  { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      color: #1a1a2e;
+      background: #fff;
+      padding: 2.5rem;
+      max-width: 820px;
+      margin: 0 auto;
+    }
+    /* No-print controls */
+    .no-print { margin-bottom: 1.5rem; display: flex; gap: 10px; }
+    .back-btn  { padding: 9px 18px; background: #1a1a2e; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+    .print-btn { padding: 9px 18px; background: #1db954; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 600; }
+    @media print { .no-print { display: none; } }
+
+    /* Header */
+    .inv-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      padding-bottom: 1.5rem; margin-bottom: 1.75rem;
+      border-bottom: 3px solid #1db954;
+    }
+    .company-logo {
+      height: 52px; width: auto; margin-bottom: 8px;
+      /* Logo is white on black — invert to black on white for print */
+      filter: invert(1) brightness(0.05);
+    }
+    .company-details { font-size: 11px; color: #5a5a7a; line-height: 1.75; }
+    .company-name { font-size: 17px; font-weight: 800; color: #1a1a2e; margin-bottom: 4px; letter-spacing: -0.01em; }
+    .inv-title-block { text-align: right; }
+    .inv-title { font-size: 30px; font-weight: 800; color: #1db954; letter-spacing: -0.02em; }
+    .inv-meta { font-size: 11px; color: #5a5a7a; line-height: 1.9; margin-top: 6px; }
+    .inv-meta strong { color: #1a1a2e; font-weight: 600; }
+
+    /* Bill to */
+    .bill-section { margin-bottom: 1.75rem; }
+    .section-label { font-size: 10px; font-weight: 700; color: #9090b0; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; }
+    .bill-to { font-size: 12px; line-height: 1.85; color: #1a1a2e; }
+    .bill-to strong { font-weight: 700; font-size: 13px; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    thead tr { background: #1a1a2e; }
+    th { padding: 9px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #fff; text-align: left; }
+    td { padding: 9px 10px; border-bottom: 1px solid #eeeef5; font-size: 12px; color: #1a1a2e; }
+    tbody tr:nth-child(even) td { background: #f8f8fc; }
+    .num { text-align: right; }
+    .ctr { text-align: center; }
+
+    /* Totals */
+    .totals-wrap { display: flex; justify-content: flex-end; margin-top: 0.5rem; }
+    .totals-box { width: 300px; }
+    .tot-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 12px; color: #5a5a7a; font-weight: 500; }
+    .tot-grand { font-size: 16px; font-weight: 800; color: #1db954; border-top: 2px solid #1db954; margin-top: 8px; padding-top: 8px; display: flex; justify-content: space-between; }
+
+    /* Notes */
+    .notes-box { margin-top: 1.25rem; padding: 10px 14px; background: #f8f8fc; border-left: 3px solid #1db954; border-radius: 0 6px 6px 0; font-size: 12px; color: #3a3a5a; }
+
+    /* Payment details */
+    .pay-details { margin-top: 2rem; border-top: 1px solid #eeeef5; padding-top: 1.25rem; font-size: 11px; color: #5a5a7a; line-height: 1.8; }
+    .pay-details-title { font-size: 12px; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .pay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 20px; margin: 6px 0 12px; }
+    .pay-item strong { color: #1a1a2e; font-weight: 600; }
+    .disclaimer { font-size: 10px; color: #9090b0; font-style: italic; border-top: 1px solid #eeeef5; padding-top: 8px; line-height: 1.6; }
+
+    /* Footer */
+    .inv-footer { margin-top: 1.75rem; text-align: center; font-size: 10px; color: #b0b0c0; border-top: 1px solid #eeeef5; padding-top: 10px; }
+  </style>
+</head>
+<body>
+
+<div class="no-print">
+  <a href="javascript:history.back()" class="back-btn">← Back</a>
+  <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+</div>
+
+<!-- Header -->
+<div class="inv-header">
+  <div>
+    <img src="{{ url_for('static', filename='jgm-logo.png') }}" alt="{{ settings.company }}" class="company-logo"/>
+    <div class="company-name">{{ settings.company or 'JGM Wholesale' }}</div>
+    <div class="company-details">
+      {% if settings.address %}{{ settings.address }}<br/>{% endif %}
+      {% if settings.postcode %}{{ settings.postcode }}<br/>{% endif %}
+      {% if settings.phone %}Tel: {{ settings.phone }}<br/>{% endif %}
+      {% if settings.email %}Email: {{ settings.email }}<br/>{% endif %}
+      {% if settings.vat_no %}VAT No: {{ settings.vat_no }}<br/>{% endif %}
+      {% if settings.crn %}Company Reg: {{ settings.crn }}<br/>{% endif %}
+    </div>
+  </div>
+  <div class="inv-title-block">
+    <div class="inv-title">INVOICE</div>
+    <div class="inv-meta">
+      <strong>Invoice No:</strong> {{ inv.num }}<br/>
+      {% if inv.ref %}<strong>Customer Ref:</strong> {{ inv.ref }}<br/>{% endif %}
+      <strong>Date:</strong> {{ inv.date }}<br/>
+      {% if inv.due_date %}<strong>Due:</strong> {{ inv.due_date }}<br/>{% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Bill to -->
+<div class="bill-section">
+  <div class="section-label">Bill To</div>
+  <div class="bill-to">
+    <strong>{{ inv.customer }}</strong><br/>
+    {% if inv.contact_name %}{{ inv.contact_name }}<br/>{% endif %}
+    {% if inv.address %}{{ inv.address }}<br/>{% endif %}
+    {% if inv.postcode %}{{ inv.postcode }}<br/>{% endif %}
+    {% if inv.contact %}{{ inv.contact }}<br/>{% endif %}
+    {% if inv.cust_vat %}VAT No: {{ inv.cust_vat }}<br/>{% endif %}
+    {% if inv.cust_crn %}Reg No: {{ inv.cust_crn }}<br/>{% endif %}
+  </div>
+</div>
+
+<!-- Line items -->
+{% set has_std    = inv.lines | selectattr('vat_mode','eq','standard') | list | length > 0 %}
+{% set has_exempt = inv.lines | selectattr('vat_mode','eq','exempt')   | list | length > 0 %}
+{% set show_vat   = has_std or has_exempt %}
+{% set exempt_lines = inv.lines | selectattr('vat_mode','eq','exempt')    | list %}
+{% set incl_lines   = inv.lines | selectattr('vat_mode','eq','inclusive') | list %}
+{% set exempt_total = exempt_lines | sum(attribute='line_total') %}
+{% set incl_total   = incl_lines   | sum(attribute='line_total') %}
+
+<table>
+  <thead>
+    <tr>
+      <th>Description</th>
+      <th class="ctr">Qty</th>
+      <th class="num">Unit Price</th>
+      {% if show_vat %}<th class="ctr">VAT</th>{% endif %}
+      <th class="num">Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ln in inv.lines %}
+    <tr>
+      <td>{{ ln.product_name }}</td>
+      <td class="ctr">{{ ln.qty }}</td>
+      <td class="num">£{{ "%.2f"|format(ln.unit_price) }}</td>
+      {% if show_vat %}
+        <td class="ctr">
+          {% if ln.vat_mode == 'standard' %}{{ ln.vat }}%
+          {% elif ln.vat_mode == 'exempt' %}0%
+          {% else %}—{% endif %}
+        </td>
+      {% endif %}
+      <td class="num">£{{ "%.2f"|format(ln.line_total) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Totals -->
+<div class="totals-wrap">
+  <div class="totals-box">
+    {% if has_std %}
+      {% set std_net = inv.total - inv.vat_amt - exempt_total - incl_total %}
+      <div class="tot-row"><span>Subtotal — Standard (excl. VAT)</span><span>£{{ "%.2f"|format(std_net) }}</span></div>
+      <div class="tot-row"><span>VAT @ 20%</span><span>£{{ "%.2f"|format(inv.vat_amt) }}</span></div>
+    {% endif %}
+    {% if has_exempt %}
+      <div class="tot-row"><span>Subtotal — VAT Exempt</span><span>£{{ "%.2f"|format(exempt_total) }}</span></div>
+    {% endif %}
+    {% if incl_lines %}
+      <div class="tot-row"><span>Subtotal — Other lines</span><span>£{{ "%.2f"|format(incl_total) }}</span></div>
+    {% endif %}
+    <div class="tot-grand"><span>TOTAL</span><span>£{{ "%.2f"|format(inv.total) }}</span></div>
+  </div>
+</div>
+
+{% if inv.notes %}
+<div class="notes-box"><strong>Notes:</strong> {{ inv.notes }}</div>
+{% endif %}
+
+<!-- Payment details -->
+<div class="pay-details">
+  <div class="pay-details-title">Payment Details</div>
+  <div class="pay-grid">
+    <div class="pay-item"><strong>Bank:</strong> Royal Bank of Scotland</div>
+    <div class="pay-item"><strong>Sort Code:</strong> 83-07-06</div>
+    <div class="pay-item"><strong>Account Number:</strong> 11613902</div>
+    <div class="pay-item"><strong>IBAN:</strong> GB27RBOS 83070611613902</div>
+    <div class="pay-item"><strong>BIC:</strong> RBOSGB2L</div>
+  </div>
+  <div class="disclaimer">
+    Goods referred to in this invoice remain property of {{ settings.company or 'JGM Wholesale' }} until paid in full.<br/>
+    No claim will be accepted unless a dispute is raised on the invoice at the time of delivery with proof.
+  </div>
+</div>
+
+<div class="inv-footer">
+  Thank you for your business &mdash; {{ settings.company or 'JGM Wholesale' }}
+</div>
+
+</body>
+</html>

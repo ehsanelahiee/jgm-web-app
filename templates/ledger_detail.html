@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Ledger: {{ cust_name }} — JGM Wholesale{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-bg">
+    <svg width="200" height="180" viewBox="0 0 200 180" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.18">
+      <rect x="20" y="10" width="120" height="155" rx="8" fill="#1db954"/>
+      <rect x="30" y="30" width="100" height="8" rx="4" fill="white" opacity="0.6"/>
+      <rect x="30" y="48" width="80"  height="6" rx="3" fill="white" opacity="0.4"/>
+      <rect x="30" y="62" width="90"  height="6" rx="3" fill="white" opacity="0.4"/>
+      <rect x="30" y="76" width="70"  height="6" rx="3" fill="white" opacity="0.4"/>
+      <rect x="30" y="98" width="100" height="4" rx="2" fill="white" opacity="0.3"/>
+      <rect x="30" y="110" width="100" height="4" rx="2" fill="white" opacity="0.3"/>
+      <rect x="30" y="122" width="100" height="4" rx="2" fill="white" opacity="0.3"/>
+      <circle cx="155" cy="50" r="28" fill="#1db954" opacity="0.7"/>
+      <text x="155" y="56" text-anchor="middle" fill="white" font-size="20" font-weight="bold">£</text>
+    </svg>
+  </div>
+  <div class="page-header-content">
+    <div class="page-title">{{ cust_name }}</div>
+    <div class="page-sub">Full invoice history, payments, and balance</div>
+    <div class="page-header-actions">
+      <a href="{{ url_for('ledger') }}" class="btn btn-sm">← Back to Ledger</a>
+    </div>
+  </div>
+</div>
+
+<!-- Balance display -->
+<div class="balance-display">
+  <div style="display:flex;justify-content:space-around;flex-wrap:wrap;gap:1.5rem">
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px">Total Invoiced</div>
+      <div style="font-size:26px;font-weight:800;color:var(--text)">£{{ "%.2f"|format(total_spend) }}</div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px">Total Paid</div>
+      <div style="font-size:26px;font-weight:800;color:var(--success)">£{{ "%.2f"|format(total_paid) }}</div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px">Balance Due</div>
+      <div style="font-size:26px;font-weight:800;color:{{ 'var(--danger)' if balance_due > 0 else 'var(--success)' }}">
+        £{{ "%.2f"|format(balance_due) }}
+        {% if balance_due <= 0 %}<span style="font-size:14px;margin-left:8px">✓ Clear</span>{% endif %}
+      </div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px">Avg. Invoice</div>
+      <div style="font-size:26px;font-weight:800;color:var(--text)">£{{ "%.2f"|format(avg_invoice) }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Record a Payment -->
+<div class="card">
+  <div class="section-header" onclick="toggleSection(this)">
+    <div class="section-title">Record a Payment</div>
+    <div class="collapse-icon open">▼</div>
+  </div>
+  <div class="section-body">
+    <form method="POST" action="{{ url_for('add_customer_payment', cust_name=cust_name) }}">
+      <div class="grid4">
+        <div>
+          <label class="label">Amount (£) *</label>
+          <input type="number" name="amount" step="0.01" min="0.01" placeholder="0.00" required/>
+        </div>
+        <div>
+          <label class="label">Payment Method</label>
+          <select name="method">
+            <option value="">— Select —</option>
+            <option value="cash">Cash</option>
+            <option value="card">Card Payment</option>
+            <option value="bank">Bank Transfer</option>
+          </select>
+        </div>
+        <div>
+          <label class="label">Date</label>
+          <input type="date" name="date" value="{{ today }}"/>
+        </div>
+        <div>
+          <label class="label">Note (optional)</label>
+          <input type="text" name="note" placeholder="e.g. Partial payment"/>
+        </div>
+      </div>
+      <div class="mt">
+        <button type="submit" class="btn btn-primary">Record Payment</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Payment History -->
+<div class="card">
+  <div class="section-header" onclick="toggleSection(this)">
+    <div class="section-title">Payment History ({{ payments|length }} records)</div>
+    <div class="collapse-icon open">▼</div>
+  </div>
+  <div class="section-body">
+    {% if payments %}
+    {% set running = namespace(balance=total_spend) %}
+    <table>
+      <thead><tr><th>Date</th><th>Method</th><th>Note</th><th>Amount Paid</th><th>Balance After</th><th></th></tr></thead>
+      <tbody>
+        {% for p in payments|sort(attribute='date') %}
+        {% set running.balance = running.balance - p.amount %}
+        <tr>
+          <td>{{ p.date }}</td>
+          <td>{{ p.method.title() if p.method else '—' }}</td>
+          <td>{{ p.note or '—' }}</td>
+          <td style="font-weight:700;color:var(--success)">£{{ "%.2f"|format(p.amount) }}</td>
+          <td style="font-weight:600;color:{{ 'var(--danger)' if running.balance > 0 else 'var(--success)' }}">
+            £{{ "%.2f"|format(running.balance) }}
+          </td>
+          <td>
+            <form method="POST" action="{{ url_for('delete_customer_payment', cust_name=cust_name, pid=p.id) }}" onsubmit="return confirm('Delete this payment record?')">
+              <button type="submit" class="btn btn-xs btn-danger">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <div class="empty"><div class="empty-icon">💳</div>No payments recorded yet.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Top Products -->
+<div class="card">
+  <div class="section-header" onclick="toggleSection(this)">
+    <div class="section-title">Top Products Purchased</div>
+    <div class="collapse-icon open">▼</div>
+  </div>
+  <div class="section-body">
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Product</th><th>Total Qty</th><th>Total Spend</th></tr></thead>
+      <tbody>
+        {% for name, data in top_products %}
+        <tr>
+          <td style="font-weight:600">{{ name }}</td>
+          <td>{{ data.qty }}</td>
+          <td style="font-weight:700;color:var(--primary)">£{{ "%.2f"|format(data.spend) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- All Invoices -->
+<div class="card">
+  <div class="section-header" onclick="toggleSection(this)">
+    <div class="section-title">All Invoices ({{ invoices|length }})</div>
+    <div class="collapse-icon open">▼</div>
+  </div>
+  <div class="section-body">
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Invoice No.</th><th>Ref</th><th>Date</th><th>Total</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for inv in invoices %}
+        <tr>
+          <td style="font-weight:700">{{ inv.num }}</td>
+          <td>{{ inv.ref or '—' }}</td>
+          <td>{{ inv.date }}</td>
+          <td style="font-weight:800;color:var(--primary)">£{{ "%.2f"|format(inv.total) }}</td>
+          <td><span class="badge b-{{ inv.pay_status }}">{{ inv.pay_status }}</span></td>
+          <td><a href="{{ url_for('print_invoice', inv_id=inv.id) }}" target="_blank" class="btn btn-sm btn-primary">Print</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

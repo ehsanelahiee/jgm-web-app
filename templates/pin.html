@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JGM Wholesale — Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+  <style>
+    .pin-page-inner {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 100vh; gap: 2.5rem;
+      padding: 2rem; position: relative; z-index: 1;
+    }
+    /* Branding */
+    .pin-hero { text-align: center; animation: fadeUp 0.6s ease both; }
+    .pin-hero-brand {
+      font-size: 48px; font-weight: 800; letter-spacing: -0.04em;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent2) 60%, var(--accent) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; line-height: 1.15; padding-bottom: 4px;
+      display: inline-block; margin-bottom: 6px;
+    }
+    .pin-hero-app {
+      font-size: 14px; font-weight: 300; color: var(--text3);
+      letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 10px;
+    }
+    .pin-hero-tagline {
+      font-size: 13px; color: var(--text3); font-weight: 400; line-height: 1.6;
+      max-width: 300px; margin: 0 auto;
+    }
+
+    /* Compact PIN box */
+    .pin-box-compact {
+      background: var(--glass-strong);
+      backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+      border: 1px solid var(--glass-border); border-radius: 24px;
+      padding: 1.75rem 2rem 1.5rem; width: 320px; max-width: 95vw;
+      box-shadow: 0 24px 80px rgba(31,38,135,0.2), inset 0 1px 0 var(--glass-shine);
+      position: relative; animation: fadeUp 0.7s ease 0.1s both;
+    }
+    .pin-box-compact::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--primary-glow), var(--accent), transparent);
+      border-radius: 24px 24px 0 0;
+    }
+    .pin-label {
+      text-align: center; font-size: 12px; font-weight: 600; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1.25rem;
+    }
+    .pin-dots-sm { display: flex; gap: 14px; justify-content: center; margin-bottom: 1.5rem; }
+    .pin-dot-sm {
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid rgba(90,90,120,0.5);
+      background: rgba(90,90,120,0.08); transition: all 0.2s ease;
+    }
+    [data-theme="dark"] .pin-dot-sm {
+      border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.04);
+    }
+    .pin-dot-sm.filled {
+      background: linear-gradient(135deg, var(--primary), var(--accent2));
+      border-color: transparent; box-shadow: 0 0 10px var(--primary-glow);
+      transform: scale(1.25);
+    }
+    .pin-pad-sm { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+    .pin-key-sm {
+      aspect-ratio: 1; font-size: 18px; font-weight: 600; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--glass-strong); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-shine);
+      cursor: pointer; transition: all var(--transition); color: var(--text); user-select: none;
+    }
+    [data-theme="dark"] .pin-key-sm { color: #e8f0ff; }
+    .pin-key-sm:hover { transform: scale(1.07); border-color: rgba(255,255,255,0.9); box-shadow: 0 8px 20px rgba(29,185,84,0.15); }
+    .pin-key-sm:active { transform: scale(0.92); background: var(--primary-glass); border-color: rgba(29,185,84,0.5); }
+    .pin-key-sm.pin-action { font-size: 11px; font-weight: 700; color: var(--text3); }
+    .pin-key-sm.pin-action:hover { color: var(--danger); background: var(--danger-glass); }
+  </style>
+</head>
+<body>
+<div class="pin-page">
+
+
+  <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme"
+    style="position:fixed;top:1.5rem;right:1.5rem;z-index:10">🌙</button>
+
+  <div class="pin-page-inner">
+
+    <div class="pin-hero">
+      <div class="pin-hero-brand">JGM Wholesale</div>
+      <div class="pin-hero-app">Invoicing System</div>
+      <div class="pin-hero-tagline">Your complete wholesale business management platform.</div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="flash flash-{{ category }}" style="width:320px;max-width:95vw;justify-content:center">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <div class="pin-box-compact">
+      <div class="pin-label">Enter your PIN</div>
+      <div class="pin-dots-sm" id="pin-dots">
+        <div class="pin-dot-sm" id="d0"></div>
+        <div class="pin-dot-sm" id="d1"></div>
+        <div class="pin-dot-sm" id="d2"></div>
+        <div class="pin-dot-sm" id="d3"></div>
+      </div>
+      <form method="POST" id="pin-form"><input type="hidden" name="pin" id="pin-input"/></form>
+      <div class="pin-pad-sm">
+        <button class="pin-key-sm" type="button" data-k="1">1</button>
+        <button class="pin-key-sm" type="button" data-k="2">2</button>
+        <button class="pin-key-sm" type="button" data-k="3">3</button>
+        <button class="pin-key-sm" type="button" data-k="4">4</button>
+        <button class="pin-key-sm" type="button" data-k="5">5</button>
+        <button class="pin-key-sm" type="button" data-k="6">6</button>
+        <button class="pin-key-sm" type="button" data-k="7">7</button>
+        <button class="pin-key-sm" type="button" data-k="8">8</button>
+        <button class="pin-key-sm" type="button" data-k="9">9</button>
+        <button class="pin-key-sm pin-action" type="button" data-k="CLR">CLR</button>
+        <button class="pin-key-sm" type="button" data-k="0">0</button>
+        <button class="pin-key-sm pin-action" type="button" data-k="DEL">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 002-2V6a2 2 0 00-2-2z"/><line x1="18" y1="9" x2="13" y2="14"/><line x1="13" y1="9" x2="18" y2="14"/></svg>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  const t = localStorage.getItem('jgm-theme') || 'light';
+  document.documentElement.setAttribute('data-theme', t);
+  const b = document.getElementById('theme-btn');
+  if (b) b.textContent = t === 'dark' ? '☀️' : '🌙';
+})();
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('theme-btn').textContent = isDark ? '🌙' : '☀️';
+  localStorage.setItem('jgm-theme', isDark ? 'light' : 'dark');
+}
+let entry = '';
+function pressKey(k) {
+  if (k === 'CLR') entry = '';
+  else if (k === 'DEL') entry = entry.slice(0,-1);
+  else if (/^[0-9]$/.test(k) && entry.length < 4) entry += k;
+  for (let i = 0; i < 4; i++)
+    document.getElementById('d'+i).classList.toggle('filled', i < entry.length);
+  if (entry.length === 4) {
+    document.getElementById('pin-input').value = entry;
+    setTimeout(() => document.getElementById('pin-form').submit(), 200);
+  }
+}
+document.querySelector('.pin-pad-sm').addEventListener('click', e => {
+  const btn = e.target.closest('.pin-key-sm');
+  if (btn) pressKey(btn.dataset.k);
+});
+document.addEventListener('keydown', e => {
+  if (e.key >= '0' && e.key <= '9') pressKey(e.key);
+  else if (e.key === 'Backspace') pressKey('DEL');
+  else if (e.key === 'Delete' || e.key === 'Escape') pressKey('CLR');
+});
+</script>
+</body>
+</html>

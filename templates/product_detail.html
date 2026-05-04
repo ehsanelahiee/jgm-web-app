@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}{{ prod.name }} — JGM Wholesale{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-bg">
+    <svg width="180" height="160" viewBox="0 0 180 160" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.2">
+      <rect x="10"  y="105" width="28" height="50" rx="6" fill="#1db954"/>
+      <rect x="50"  y="75"  width="28" height="80" rx="6" fill="#38bdf8"/>
+      <rect x="90"  y="45"  width="28" height="110" rx="6" fill="#a78bfa"/>
+      <rect x="130" y="15"  width="28" height="140" rx="6" fill="#1db954" opacity="0.8"/>
+      <polyline points="24,95 64,68 104,38 144,10" stroke="rgba(255,255,255,0.5)" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <circle cx="24"  cy="95" r="5" fill="white" opacity="0.8"/>
+      <circle cx="64"  cy="68" r="5" fill="white" opacity="0.8"/>
+      <circle cx="104" cy="38" r="5" fill="white" opacity="0.8"/>
+      <circle cx="144" cy="10" r="5" fill="white" opacity="0.8"/>
+    </svg>
+  </div>
+  <div class="page-header-content">
+    <div style="font-size:11px;font-weight:600;color:var(--primary);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">
+      {{ prod.category or 'Product' }}{% if prod.sku %} · {{ prod.sku }}{% endif %}
+    </div>
+    <div class="page-title">{{ prod.name }}</div>
+    <div class="page-sub">Sales history, top customers, and performance charts</div>
+    <!-- Actions below title, no overlap -->
+    <div class="page-header-actions">
+      <a href="{{ url_for('products') }}" class="btn btn-sm">← Products</a>
+      <form method="POST" action="{{ url_for('delete_product', pid=prod.id) }}" onsubmit="return confirm('Remove this product?')" style="display:inline">
+        <button type="submit" class="btn btn-sm btn-danger">Remove Product</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stat-grid" style="margin-bottom:1.25rem">
+  <div class="stat-card"><div class="stat-label">Unit Price</div><div class="stat-val">£{{ "%.2f"|format(prod.price) }}</div></div>
+  <div class="stat-card"><div class="stat-label">Total Units Sold</div><div class="stat-val">{{ total_units }}</div></div>
+  <div class="stat-card"><div class="stat-label">Total Revenue</div><div class="stat-val">£{{ "%.0f"|format(total_revenue) }}</div></div>
+  <div class="stat-card"><div class="stat-label">Invoices Featuring</div><div class="stat-val">{{ invoice_count }}</div></div>
+</div>
+
+<!-- Editable product details -->
+<div class="card">
+  <div class="section-header" onclick="toggleSection(this)">
+    <div class="section-title">Edit Product Details</div>
+    <div class="collapse-icon open">▼</div>
+  </div>
+  <div class="section-body">
+    <form method="POST" action="{{ url_for('update_product', pid=prod.id) }}">
+      <div class="grid4">
+        <div style="grid-column:1/3">
+          <label class="label">Product Name *</label>
+          <input type="text" name="name" value="{{ prod.name }}" required/>
+        </div>
+        <div>
+          <label class="label">SKU / Code</label>
+          <input type="text" name="sku" value="{{ prod.sku or '' }}" placeholder="e.g. CC-500-24"/>
+        </div>
+        <div>
+          <label class="label">Category</label>
+          <input type="text" name="category" value="{{ prod.category or '' }}" placeholder="e.g. Drinks"/>
+        </div>
+      </div>
+      <div class="grid4 mt">
+        <div>
+          <label class="label">Unit Price (£)</label>
+          <input type="number" name="price" step="0.01" min="0" value="{{ prod.price }}"/>
+        </div>
+        <div>
+          <label class="label">VAT Rate</label>
+          <select name="vat">
+            <option value="20" {{ 'selected' if prod.vat==20 }}>20% Standard</option>
+            <option value="0"  {{ 'selected' if prod.vat==0  }}>0% Exempt</option>
+          </select>
+        </div>
+        <div>
+          <label class="label">Current Stock</label>
+          <input type="number" name="stock" min="0" step="1" value="{{ prod.stock }}"/>
+        </div>
+      </div>
+      <div class="mt">
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if chart_labels %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
+  <div class="card" style="margin-bottom:0">
+    <div class="section-title">Monthly Units Sold</div>
+    <div style="position:relative;height:220px"><canvas id="chart-qty"></canvas></div>
+  </div>
+  <div class="card" style="margin-bottom:0">
+    <div class="section-title">Monthly Revenue</div>
+    <div style="position:relative;height:220px"><canvas id="chart-rev"></canvas></div>
+  </div>
+</div>
+<script>
+const labels  = {{ chart_labels  | tojson }};
+const qtyData = {{ chart_qty     | tojson }};
+const revData = {{ chart_revenue | tojson }};
+const isDark  = () => document.documentElement.getAttribute('data-theme') === 'dark';
+const gridClr = () => isDark() ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+const txtClr  = () => isDark() ? '#a0a8c8' : '#7a7a9d';
+Chart.defaults.font.family = "'Poppins',sans-serif";
+Chart.defaults.font.size = 12;
+new Chart(document.getElementById('chart-qty'), {
+  type: 'bar',
+  data: { labels, datasets: [{ label:'Units', data:qtyData, backgroundColor:'rgba(56,189,248,0.7)', borderColor:'#38bdf8', borderWidth:1, borderRadius:6 }] },
+  options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ y:{beginAtZero:true,ticks:{color:txtClr()},grid:{color:gridClr()}}, x:{grid:{display:false},ticks:{color:txtClr()}} } }
+});
+new Chart(document.getElementById('chart-rev'), {
+  type: 'line',
+  data: { labels, datasets: [{ label:'Revenue', data:revData, borderColor:'#1db954', backgroundColor:'rgba(29,185,84,0.1)', borderWidth:2.5, pointBackgroundColor:'#1db954', pointRadius:4, tension:0.35, fill:true }] },
+  options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>' £'+ctx.parsed.y.toFixed(2)}} }, scales:{ y:{beginAtZero:true,ticks:{callback:v=>'£'+v,color:txtClr()},grid:{color:gridClr()}}, x:{grid:{display:false},ticks:{color:txtClr()}} } }
+});
+</script>
+{% endif %}
+
+{% if top_customers %}
+<div class="card">
+  <div class="section-header" onclick="toggleSection(this)">
+    <div class="section-title">Top Customers for this Product</div>
+    <div class="collapse-icon open">▼</div>
+  </div>
+  <div class="section-body">
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Customer</th><th>Units Purchased</th><th>Total Spend</th></tr></thead>
+      <tbody>
+        {% for name, data in top_customers %}
+        <tr>
+          <td style="font-weight:600">{{ name }}</td>
+          <td>{{ data.qty }}</td>
+          <td style="font-weight:700;color:var(--primary)">£{{ "%.2f"|format(data.spend) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div class="empty"><div class="empty-icon" style="font-size:36px;opacity:0.3;margin-bottom:0.75rem">📦</div>This product hasn't appeared on any invoice yet.</div>
+</div>
+{% endif %}
+
+{% endblock %}

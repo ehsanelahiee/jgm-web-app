@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% block title %}New Invoice — JGM Wholesale{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-bg">
+    <svg width="220" height="200" viewBox="0 0 220 200" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.18">
+      <rect x="30" y="10" width="130" height="170" rx="10" fill="#1db954" stroke="currentColor" stroke-width="2"/>
+      <line x1="55" y1="50" x2="135" y2="50" stroke="white" stroke-width="3" stroke-linecap="round"/>
+      <line x1="55" y1="70" x2="135" y2="70" stroke="white" stroke-width="3" stroke-linecap="round"/>
+      <line x1="55" y1="90" x2="110" y2="90" stroke="white" stroke-width="3" stroke-linecap="round"/>
+      <line x1="55" y1="120" x2="135" y2="120" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="55" y1="135" x2="135" y2="135" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <!-- Pen -->
+      <rect x="145" y="80" width="12" height="60" rx="3" fill="#1db954" transform="rotate(30,151,110)" opacity="0.8"/>
+      <polygon points="145,140 157,140 151,160" fill="#1db954" transform="rotate(30,151,110)" opacity="0.8"/>
+    </svg>
+  </div>
+  <div class="page-header-content">
+    <div class="page-title">New Invoice</div>
+    <div class="page-sub">Create and save a customer invoice</div>
+  </div>
+</div>
+
+<form method="POST" id="invoice-form">
+
+  <!-- Invoice Details -->
+  <div class="card">
+    <div class="section-header" onclick="toggleSection(this)">
+      <div class="section-title">Invoice Details</div>
+      <div class="collapse-icon open">▼</div>
+    </div>
+    <div class="section-body">
+      <div class="grid4">
+        <div><label class="label">Invoice No.</label><input type="text" name="inv_num" value="{{ next_num }}" required/></div>
+        <div><label class="label">Customer Ref</label><input type="text" name="inv_ref" placeholder="Optional"/></div>
+        <div><label class="label">Invoice Date</label><input type="date" name="inv_date" value="{{ today }}" required/></div>
+        <div><label class="label">Due Date</label><input type="date" name="inv_due"/></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Customer Details -->
+  <div class="card">
+    <div class="section-header" onclick="toggleSection(this)">
+      <div class="section-title">Customer Details</div>
+      <div class="collapse-icon open">▼</div>
+    </div>
+    <div class="section-body">
+      <div class="grid2">
+        <div>
+          <label class="label">Select Existing Customer</label>
+          <select id="cust-select" onchange="loadCustomer(this.value)">
+            <option value="">— Search / select —</option>
+            {% for c in customers %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div><label class="label">Contact Person</label><input type="text" name="cust_contact_name" id="cust_contact_name" placeholder="e.g. John Smith"/></div>
+      </div>
+      <div class="grid3 mt">
+        <div><label class="label">Business Name *</label><input type="text" name="cust_name" id="cust_name" required placeholder="e.g. Al-Madina Supermarket"/></div>
+        <div><label class="label">Address</label><input type="text" name="cust_addr" id="cust_addr" placeholder="Street address"/></div>
+        <div><label class="label">Postcode</label><input type="text" name="cust_postcode" id="cust_postcode" placeholder="e.g. G1 1AA"/></div>
+      </div>
+      <div class="grid3 mt">
+        <div><label class="label">Phone / Email</label><input type="text" name="cust_contact" id="cust_contact"/></div>
+        <div><label class="label">Customer VAT No.</label><input type="text" name="cust_vat" id="cust_vat" placeholder="GB000000000"/></div>
+        <div><label class="label">Customer Reg. No.</label><input type="text" name="cust_crn" id="cust_crn" placeholder="12345678"/></div>
+      </div>
+      <div style="margin-top:10px">
+        <label style="font-size:12px;font-weight:500;color:var(--text2);display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" name="save_cust" style="width:auto"/> Save / update customer in database
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Line Items -->
+  <div class="card">
+    <div class="section-header" onclick="toggleSection(this)">
+      <div class="section-title">Line Items</div>
+      <div class="collapse-icon open">▼</div>
+    </div>
+    <div class="section-body">
+      <div class="line-hdr">
+        <span>Product</span><span>Qty</span><span>Unit Price (£)</span>
+        <span>VAT Treatment</span><span>Line Total</span><span></span>
+      </div>
+      <div id="line-items">
+        <div class="line-item" id="line-0">
+          <div class="sd-wrap">
+            <input type="text" placeholder="Search product..." autocomplete="off" class="prod-search"
+              oninput="searchProducts(0,this.value)" onfocus="searchProducts(0,this.value)"/>
+            <div class="sd-list" id="pdrop-0"></div>
+            <input type="hidden" name="product_id[]" id="pid-0"/>
+          </div>
+          <input type="number" name="qty[]" id="qty-0" min="1" value="1" onchange="recalcLine(0)"/>
+          <input type="number" name="unit_price[]" id="price-0" min="0" step="0.01" value="0.00" onchange="recalcLine(0)"/>
+          <select name="vat_mode[]" id="vmode-0" onchange="recalcLine(0)">
+            <option value="standard">20% VAT (standard)</option>
+            <option value="exempt">0% Exempt</option>
+            <option value="inclusive">VAT inclusive</option>
+          </select>
+          <span class="line-total" id="ltotal-0">£0.00</span>
+          <button type="button" class="btn-danger btn-sm" onclick="removeLine(0)">&times;</button>
+        </div>
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm mt" onclick="addLine()">+ Add line</button>
+      <div class="totals-box mt" id="totals-box">
+        <div class="total-row grand"><span>Invoice Total</span><span>£0.00</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Status -->
+  <div class="card">
+    <div class="section-header" onclick="toggleSection(this)">
+      <div class="section-title">Payment Status</div>
+      <div class="collapse-icon open">▼</div>
+    </div>
+    <div class="section-body">
+      <div class="pay-group">
+        <button type="button" class="pay-btn active-unpaid" id="ps-unpaid"  onclick="setPayStatus('unpaid')">Unpaid</button>
+        <button type="button" class="pay-btn"               id="ps-pending" onclick="setPayStatus('pending')">Pending Payment</button>
+        <button type="button" class="pay-btn"               id="ps-paid"    onclick="setPayStatus('paid')">Paid</button>
+      </div>
+      <input type="hidden" name="pay_status" id="pay_status" value="unpaid"/>
+      <div id="pay-method-wrap" style="display:none;margin-top:0.75rem">
+        <div class="label" style="margin-bottom:8px">Payment Method</div>
+        <div class="method-group">
+          <button type="button" class="method-btn" id="pm-cash" onclick="setPayMethod('cash')">Cash</button>
+          <button type="button" class="method-btn" id="pm-card" onclick="setPayMethod('card')">Card Payment</button>
+          <button type="button" class="method-btn" id="pm-bank" onclick="setPayMethod('bank')">Bank Transfer</button>
+        </div>
+        <input type="hidden" name="pay_method" id="pay_method" value=""/>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notes -->
+  <div class="card">
+    <div class="section-header" onclick="toggleSection(this)">
+      <div class="section-title">Notes</div>
+      <div class="collapse-icon open">▼</div>
+    </div>
+    <div class="section-body">
+      <textarea name="notes" rows="2" placeholder="Any additional notes..."></textarea>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button type="submit" class="btn btn-primary">Save Invoice</button>
+  </div>
+</form>
+
+{% endblock %}
+{% block scripts %}
+<script>
+let lineCount = 1;
+function loadCustomer(id) {
+  if (!id) return;
+  fetch(`/api/customer/${id}`).then(r=>r.json()).then(c=>{
+    document.getElementById('cust_name').value=c.name;
+    document.getElementById('cust_contact_name').value=c.contact_name;
+    document.getElementById('cust_contact').value=c.contact;
+    document.getElementById('cust_addr').value=c.address;
+    document.getElementById('cust_postcode').value=c.postcode;
+    document.getElementById('cust_vat').value=c.vat_no;
+    document.getElementById('cust_crn').value=c.crn;
+  });
+}
+function searchProducts(idx,q) {
+  const drop=document.getElementById('pdrop-'+idx);
+  if(!q){drop.innerHTML='';drop.classList.remove('open');return;}
+  fetch(`/api/products?q=${encodeURIComponent(q)}`).then(r=>r.json()).then(products=>{
+    drop.innerHTML=!products.length
+      ?'<div class="sd-item no-match">No products found</div>'
+      :products.map(p=>`<div class="sd-item" onmousedown="selectProduct(${idx},${p.id},'${p.name.replace(/'/g,"\\'")}',${p.price},${p.vat})">${p.name} <span style="font-size:11px;color:var(--text3);margin-left:8px">£${p.price.toFixed(2)} · stock: ${p.stock}</span></div>`).join('');
+    drop.classList.add('open');
+  });
+}
+function selectProduct(idx,id,name,price,vat){
+  document.querySelector(`#line-${idx} .prod-search`).value=name;
+  document.getElementById('pid-'+idx).value=id;
+  document.getElementById('price-'+idx).value=price.toFixed(2);
+  document.getElementById('pdrop-'+idx).classList.remove('open');
+  recalcLine(idx);
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.sd-wrap')) document.querySelectorAll('.sd-list').forEach(d=>d.classList.remove('open'));
+});
+function recalcLine(idx){
+  const qty=parseFloat(document.getElementById('qty-'+idx)?.value)||0;
+  const price=parseFloat(document.getElementById('price-'+idx)?.value)||0;
+  const vmode=document.getElementById('vmode-'+idx)?.value||'standard';
+  const total=vmode==='standard'?qty*price*1.20:qty*price;
+  const el=document.getElementById('ltotal-'+idx);
+  if(el) el.textContent='£'+total.toFixed(2);
+  recalcTotals();
+}
+function recalcTotals(){
+  let stdNet=0,stdVat=0,exemptNet=0,inclTotal=0;
+  document.querySelectorAll('.line-item').forEach(row=>{
+    const idx=row.id.replace('line-','');
+    const qty=parseFloat(document.getElementById('qty-'+idx)?.value)||0;
+    const price=parseFloat(document.getElementById('price-'+idx)?.value)||0;
+    const vmode=document.getElementById('vmode-'+idx)?.value||'standard';
+    const net=qty*price;
+    if(vmode==='standard'){stdNet+=net;stdVat+=net*0.20;}
+    else if(vmode==='exempt'){exemptNet+=net;}
+    else if(vmode==='inclusive'){inclTotal+=net;}
+  });
+  const grand=stdNet+stdVat+exemptNet+inclTotal;
+  let html='';
+  if(stdNet>0) html+=`<div class="total-row"><span>Subtotal — Standard (excl. VAT)</span><span>£${stdNet.toFixed(2)}</span></div><div class="total-row"><span>VAT @ 20%</span><span>£${stdVat.toFixed(2)}</span></div>`;
+  if(exemptNet>0) html+=`<div class="total-row"><span>Subtotal — VAT exempt</span><span>£${exemptNet.toFixed(2)}</span></div>`;
+  if(inclTotal>0) html+=`<div class="total-row"><span>Subtotal — VAT inclusive</span><span>£${inclTotal.toFixed(2)}</span></div>`;
+  html+=`<div class="total-row grand"><span>Invoice Total</span><span>£${grand.toFixed(2)}</span></div>`;
+  document.getElementById('totals-box').innerHTML=html;
+}
+function setPayStatus(status){
+  ['paid','unpaid','pending'].forEach(s=>document.getElementById('ps-'+s).className='pay-btn'+(s===status?' active-'+s:''));
+  document.getElementById('pay_status').value=status;
+  document.getElementById('pay-method-wrap').style.display=status==='paid'?'block':'none';
+  if(status!=='paid'){document.getElementById('pay_method').value='';setPayMethod('');}
+}
+function setPayMethod(method){
+  ['cash','card','bank'].forEach(m=>document.getElementById('pm-'+m).classList.toggle('active',m===method));
+  document.getElementById('pay_method').value=method;
+}
+function addLine(){
+  const idx=lineCount++;
+  const div=document.createElement('div');
+  div.className='line-item';div.id='line-'+idx;
+  div.innerHTML=`<div class="sd-wrap"><input type="text" placeholder="Search product..." autocomplete="off" class="prod-search" oninput="searchProducts(${idx},this.value)" onfocus="searchProducts(${idx},this.value)"/><div class="sd-list" id="pdrop-${idx}"></div><input type="hidden" name="product_id[]" id="pid-${idx}"/></div><input type="number" name="qty[]" id="qty-${idx}" min="1" value="1" onchange="recalcLine(${idx})"/><input type="number" name="unit_price[]" id="price-${idx}" min="0" step="0.01" value="0.00" onchange="recalcLine(${idx})"/><select name="vat_mode[]" id="vmode-${idx}" onchange="recalcLine(${idx})"><option value="standard">20% VAT (standard)</option><option value="exempt">0% Exempt</option><option value="inclusive">VAT inclusive</option></select><span class="line-total" id="ltotal-${idx}">£0.00</span><button type="button" class="btn-danger btn-sm" onclick="removeLine(${idx})">&times;</button>`;
+  document.getElementById('line-items').appendChild(div);
+}
+function removeLine(idx){
+  const el=document.getElementById('line-'+idx);
+  if(el){el.style.opacity='0';el.style.transform='translateX(-10px)';setTimeout(()=>{el.remove();recalcTotals();},200);}
+}
+</script>
+{% endblock %}
